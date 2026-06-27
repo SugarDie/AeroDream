@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>AeroDream Systems | Art Therapy Software</title>
+    <style>
+        :root {
+            --bg: #74b9ff; --panel: rgba(255, 255, 255, 0.4);
+            --text: #003060; --accent: #0984e3;
+        }
+        [data-theme="dark"] {
+            --bg: #010a1a; --panel: rgba(0, 20, 40, 0.8);
+            --text: #ffffff; --accent: #00f2ff;
+        }
+
+        body, html {
+            margin: 0; padding: 0; height: 100%; font-family: 'Segoe UI', sans-serif;
+            background-color: var(--bg); color: var(--text); overflow: hidden;
+            transition: background 0.8s ease; touch-action: none;
+        }
+
+        /* --- ФОН (НИЖНИЙ СЛОЙ) --- */
+        #bg-fx { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; pointer-events: none; }
+        .cloud { position: absolute; background: white; border-radius: 50%; filter: blur(25px); opacity: 0.5; animation: drift 90s infinite linear; }
+        .bubble { position: absolute; border: 1px solid rgba(255,255,255,0.3); border-radius: 50%; animation: rise 20s infinite linear; }
+        @keyframes drift { from { left: -300px; } to { left: 100vw; } }
+        @keyframes rise { from { transform: translateY(110vh); opacity: 1; } to { transform: translateY(-20vh); opacity: 0; } }
+
+        /* --- ИНТЕРФЕЙС --- */
+        .ui-root { position: relative; z-index: 10; height: 100%; display: flex; flex-direction: column; }
+
+        nav {
+            height: 60px; background: var(--panel); backdrop-filter: blur(20px);
+            display: flex; align-items: center; justify-content: center; gap: 20px;
+            border-bottom: 1px solid rgba(255,255,255,0.2);
+        }
+        nav button {
+            background: var(--accent); color: white; border: none;
+            padding: 10px 20px; border-radius: 20px; cursor: pointer; font-weight: bold;
+            transition: 0.3s;
+        }
+
+        .page { display: none; flex: 1; flex-direction: column; align-items: center; justify-content: center; padding: 20px; text-align: center; }
+        .page.active { display: flex; }
+
+        /* --- ГЛАВНАЯ (ИНФО) --- */
+        .info-card {
+            background: var(--panel); backdrop-filter: blur(30px);
+            padding: 40px; border-radius: 40px; border: 2px solid white;
+            max-width: 600px; box-shadow: 0 20px 50px rgba(0,0,0,0.1);
+            animation: cardFloat 5s infinite ease-in-out;
+        }
+        @keyframes cardFloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-15px); } }
+
+        .buy-btn {
+            display: inline-block; margin-top: 25px; padding: 15px 40px;
+            background: linear-gradient(180deg, #54a0ff, #00d2d3);
+            color: white; text-decoration: none; border-radius: 50px;
+            font-weight: 900; letter-spacing: 1px; font-size: 1.2rem;
+            box-shadow: 0 10px 20px rgba(0,210,211,0.3), inset 0 2px 5px white;
+            transition: 0.3s; border: 1px solid rgba(255,255,255,0.4);
+        }
+        .buy-btn:hover { transform: scale(1.1); filter: brightness(1.1); box-shadow: 0 15px 30px rgba(0,210,211,0.5); }
+
+        /* РЫБАЛКА И РИСОВАНИЕ */
+        #aquarium { width: 90%; max-width: 800px; height: 350px; background: rgba(255,255,255,0.1); border: 3px solid white; border-radius: 40px; position: relative; overflow: hidden; backdrop-filter: blur(15px); }
+        .fish { position: absolute; font-size: 50px; cursor: pointer; z-index: 100; user-select: none; }
+        canvas#paint-cvs { background: white; border-radius: 15px; border: 1px solid #ddd; width: 100%; height: 450px; cursor: crosshair; touch-action: none; }
+
+        .theme-btn { position: fixed; bottom: 30px; left: 30px; padding: 15px 30px; border-radius: 40px; background: var(--accent); color: white; border: none; cursor: pointer; font-weight: bold; z-index: 1000; }
+    </style>
+</head>
+<body data-theme="light">
+
+<div id="bg-fx"></div>
+
+<div class="ui-root">
+    <nav>
+        <button onclick="go('home')">ГЛАВНАЯ</button>
+        <button onclick="go('game')">РЫБАЛКА</button>
+        <button onclick="go('paint')">РИСОВАНИЕ</button>
+    </nav>
+
+    <!-- ГЛАВНАЯ -->
+    <div id="home" class="page active">
+        <div class="info-card">
+            <h1 style="margin:0; font-size: 2.5rem; letter-spacing: 2px;">AeroDream OS</h1>
+            <p style="margin-top: 15px; line-height: 1.6; opacity: 0.9;">
+                Мы создаем профессиональное программное обеспечение для <b>арт-терапии</b> и <b>игровой психотерапии</b>. 
+                Наши алгоритмы помогают детям и взрослым прорабатывать эмоции через безопасную цифровую среду и эстетику 2000-х.
+            </p>
+            <a href="https://example.com/buy" class="buy-btn" target="_blank">КУПИТЬ СОФТ</a>
+            <p style="font-size: 0.7rem; margin-top: 20px; opacity: 0.6;">v4.0.2 Stable Release • Лицензия для клиник</p>
+        </div>
+    </div>
+
+    <!-- РЫБАЛКА -->
+    <div id="game" class="page">
+        <div style="font-weight:bold; margin-bottom:10px;">ЗАПАС РЫБЫ 🐟: <span id="f-count">0</span></div>
+        <div id="aquarium"></div>
+        <div id="cat-row" style="display:flex; gap:20px; margin-top:30px;"></div>
+    </div>
+
+    <!-- РИСОВАНИЕ -->
+    <div id="paint" class="page">
+        <div style="background:white; padding:15px; border-radius:30px; width:95%; max-width:850px;">
+            <div style="margin-bottom:10px; display:flex; gap:10px; justify-content:center;">
+                <input type="color" id="pColor" value="#0984e3">
+                <input type="range" id="pSize" min="1" max="80" value="15">
+                <button onclick="pMode='b'">🖌️</button>
+                <button onclick="pMode='e'">🧽</button>
+                <button onclick="clearC()" style="color:red">🗑️</button>
+            </div>
+            <canvas id="paint-cvs"></canvas>
+        </div>
+    </div>
+</div>
+
+<button class="theme-btn" onclick="swapTheme()">СМЕНИТЬ ТЕМУ</button>
+
+<script>
+    let inventory = 0, pMode = 'b', curPage = 'home';
+
+    function go(id) {
+        curPage = id;
+        document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+        if(id === 'paint') resizeC();
+    }
+
+    // --- ФОН ---
+    function initBg() {
+        const bg = document.getElementById('bg-fx'); bg.innerHTML = '';
+        const dark = document.body.getAttribute('data-theme') === 'dark';
+        if(dark) {
+            for(let i=0; i<25; i++) {
+                const b = document.createElement('div'); b.className = 'bubble';
+                let s = Math.random()*40+10+'px'; b.style.width=s; b.style.height=s;
+                b.style.left=Math.random()*100+'%'; b.style.animationDuration=Math.random()*15+10+'s';
+                bg.appendChild(b);
+            }
+        } else {
+            for(let i=0; i<7; i++) {
+                const c = document.createElement('div'); c.className = 'cloud';
+                c.style.width=Math.random()*300+200+'px'; c.style.height='100px';
+                c.style.top=Math.random()*80+'%'; c.style.animationDuration=Math.random()*50+40+'s';
+                bg.appendChild(c);
+            }
+        }
+    }
+    initBg();
+
+    function swapTheme() {
+        document.body.setAttribute('data-theme', document.body.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
+        initBg();
+    }
+
+    // --- РЫБАЛКА ---
+    const aq = document.getElementById('aquarium');
+    setInterval(() => {
+        if(curPage !== 'game') return;
+        const f = document.createElement('div');
+        f.className = 'fish'; f.innerHTML = '🐟';
+        f.style.left = Math.random()*85+'%'; f.style.top = Math.random()*80+'%';
+        f.onpointerdown = (e) => { e.stopPropagation(); inventory++; document.getElementById('f-count').innerText = inventory; f.remove(); };
+        aq.appendChild(f);
+        setTimeout(() => { if(f.parentNode) f.remove(); }, 5000);
+    }, 1500);
+
+    function createCat() {
+        const n = Math.floor(Math.random()*4)+1;
+        const u = document.createElement('div');
+        u.innerHTML = `<div style="font-size:12px; font-weight:bold;">NEED: ${n}</div><div style="font-size:40px; cursor:pointer;" onclick="feed(this, ${n})">ฅ^•ﻌ•^ฅ</div>`;
+        document.getElementById('cat-row').appendChild(u);
+    }
+    function feed(el, n) {
+        if(inventory <= 0) return; inventory--; document.getElementById('f-count').innerText = inventory;
+        let msg = el.previousSibling; let cur = parseInt(msg.innerText.replace(/\D/g, ""));
+        cur--;
+        if(cur <= 0) { msg.innerText = "DONE!"; el.innerHTML = "⋆˚🐾˖°"; setTimeout(() => { el.parentElement.remove(); createCat(); }, 800); }
+        else { msg.innerText = `NEED: ${cur}`; }
+    }
+    for(let i=0; i<3; i++) createCat();
+
+    // --- РИСОВАНИЕ ---
+    const cvs = document.getElementById('paint-cvs');
+    const ctx = cvs.getContext('2d');
+    let drawing = false;
+
+    function resizeC() {
+        const r = cvs.getBoundingClientRect();
+        cvs.width = r.width; cvs.height = 450;
+        ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    }
+
+    cvs.addEventListener('pointerdown', (e) => { drawing = true; ctx.beginPath(); const r = cvs.getBoundingClientRect(); ctx.moveTo(e.clientX - r.left, e.clientY - r.top); });
+    cvs.addEventListener('pointermove', (e) => {
+        if (!drawing) return;
+        const r = cvs.getBoundingClientRect();
+        ctx.lineWidth = document.getElementById('pSize').value * (e.pressure > 0 ? e.pressure * 2 : 1);
+        ctx.strokeStyle = pMode === 'b' ? document.getElementById('pColor').value : '#ffffff';
+        ctx.lineTo(e.clientX - r.left, e.clientY - r.top); ctx.stroke();
+    });
+    window.addEventListener('pointerup', () => drawing = false);
+    function clearC() { ctx.clearRect(0,0,cvs.width,cvs.height); }
+</script>
+</body>
+</html>
